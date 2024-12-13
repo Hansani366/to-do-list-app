@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List App</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-image: url('https://i.pinimg.com/736x/67/90/d0/6790d099fe3f59f4e311be40c98e80f4.jpg');
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Playfair Display', serif;
+            position: relative;
+        }
+
+        
+
+       
+        .container {
+            background: linear-gradient(to bottom, #f574c3, #9ca4ee); 
+            color: #333;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 400px;
+            border: 15px solid #eff3f7;
+            position: relative;
+           
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #1e3a5f;
+            margin-bottom: 20px;
+            text-align: center;
+            font-family: 'Great Vibes', cursive;
+        }
+
+        button {
+            background-color: #887ee7;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: 'Great Vibes', cursive;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #66dae9;
+        }
+
+        ul {
+            padding: 0;
+            list-style: none;
+            font-family: 'Playfair Display', serif;
+        }
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            font-size: 16px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            cursor: grab;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        li.dragging {
+            opacity: 0.7;
+            background: #d4e7fa;
+            transform: scale(1.05);
+            border: 2px dashed #4a90e2;
+        }
+
+        li.placeholder {
+            background: #758647;
+            border: 2px dashed #b2d4f4;
+            height: 50px;
+        }
+
+        .heart-mark {
+            display: none;
+            margin-left: 10px;
+            color: rgb(32, 12, 105);
+            font-size: 16px;
+        }
+
+        .completed {
+            text-decoration: none;
+            color: #6822c2;
+            font-weight: bold;
+        }
+
+        .completed .heart-mark {
+            display: inline-block;
+        }
+
+        /* Custom Alert Box Styles */
+        .alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .alert-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .alert-box {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 300px;
+            animation: pop-in 0.3s ease-out;
+        }
+
+        .alert-box h2 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .alert-box button {
+            background-color: #300c85;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .alert-box button:hover {
+            background-color: #8ea2e6;
+        }
+
+        @keyframes pop-in {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>To-Do List</h1>
+        <!-- Input Section -->
+        <div class="task-input">
+            <input type="text" id="task" placeholder="Add a task." />
+            <button onclick="addTask()">Add</button>
+        </div>
+        <!-- Task List Section -->
+        <ul id="task-list"></ul>
+    </div>
+
+    <!-- Custom Alert Box -->
+    <div id="alert-overlay" class="alert-overlay">
+        <div class="alert-box">
+            <h2 id="alert-message">Message</h2>
+            <button onclick="closeAlert()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Get the task list container
+        const taskList = document.getElementById("task-list");
+
+        // Load tasks from localStorage on page load
+        document.addEventListener("DOMContentLoaded", loadTasks);
+
+        // Function to add a new task
+        function addTask() {
+            const taskInput = document.getElementById("task");
+            const taskText = taskInput.value.trim();
+
+            // Validate input
+            if (taskText === "") {
+                showAlert("Please enter a task");
+                return;
+            }
+
+            // Create and display the task
+            const listItem = createTaskElement(taskText, false);
+
+            // Append the task to the list
+            taskList.appendChild(listItem);
+
+            // Save tasks to localStorage
+            saveTasks();
+
+            // Clear the input field
+            taskInput.value = "";
+        }
+
+        // Function to show the custom alert
+        function showAlert(message) {
+            const alertOverlay = document.getElementById("alert-overlay");
+            const alertMessage = document.getElementById("alert-message");
+            alertMessage.textContent = message;
+            alertOverlay.classList.add("active");
+        }
+
+        // Function to close the custom alert
+        function closeAlert() {
+            const alertOverlay = document.getElementById("alert-overlay");
+            alertOverlay.classList.remove("active");
+        }
+
+        // Function to create a task element
+        function createTaskElement(text, isCompleted) {
+            const listItem = document.createElement("li");
+            listItem.draggable = true; // Make task draggable
+            listItem.innerHTML = `
+                <span class="task-text">${text}</span>
+                <span class="heart-mark">❤️</span>
+                <button onclick="deleteTask(this)">Delete</button>
+            `;
+
+            if (isCompleted) {
+                listItem.classList.add("completed");
+            }
+
+            // Add drag-and-drop event listeners
+            listItem.addEventListener("dragstart", () => {
+                listItem.classList.add("dragging");
+            });
+
+            listItem.addEventListener("dragend", () => {
+                listItem.classList.remove("dragging");
+                saveTasks(); // Save new order
+            });
+
+            // Add event listener to toggle completion
+            listItem.addEventListener("click", (event) => {
+                if (event.target.tagName !== "BUTTON") {
+                    listItem.classList.toggle("completed");
+                    const heartMark = listItem.querySelector(".heart-mark");
+                    heartMark.style.display = listItem.classList.contains("completed") ? "inline-block" : "none";
+                    saveTasks();
+                }
+            });
+
+            return listItem;
+        }
+
+        // Function to delete a task
+        function deleteTask(button) {
+            const listItem = button.parentElement;
+            taskList.removeChild(listItem);
+            saveTasks();
+        }
+
+        // Function to save tasks to localStorage
+        function saveTasks() {
+            const tasks = [];
+            const listItems = taskList.querySelectorAll("li");
+            listItems.forEach((item) => {
+                const taskText = item.querySelector(".task-text").textContent;
+                const isCompleted = item.classList.contains("completed");
+                tasks.push({ text: taskText, completed: isCompleted });
+            });
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+        }
+
+        // Function to load tasks from localStorage
+        function loadTasks() {
+            const savedTasks = localStorage.getItem("tasks");
+            if (savedTasks) {
+                const tasks = JSON.parse(savedTasks);
+                tasks.forEach((task) => {
+                    const listItem = createTaskElement(task.text, task.completed);
+                    taskList.appendChild(listItem);
+                });
+            }
+        }
+
+        // Drag-and-Drop Logic
+        taskList.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(taskList, e.clientY);
+            const draggingElement = document.querySelector(".dragging");
+
+            if (afterElement == null) {
+                taskList.appendChild(draggingElement);
+            } else {
+                taskList.insertBefore(draggingElement, afterElement);
+            }
+        });
+
+        // Function to get the element after which to place the dragged item
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll("li:not(.dragging)")];
+
+            return draggableElements.reduce(
+                (closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                },
+                { offset: Number.NEGATIVE_INFINITY }
+            ).element;
+        }
+    </script>
+</body>
+</html>
