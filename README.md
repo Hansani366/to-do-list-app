@@ -7,3 +7,4 @@ This is a simple to-do list app built with HTML, CSS, and JavaScript.
 - Mark tasks as completed
 - Delete tasks
 - Responsive design
+-Interactive Drag and Drop (Optional)
